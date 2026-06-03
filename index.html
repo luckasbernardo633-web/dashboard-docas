@@ -293,17 +293,17 @@ tr:last-child td { border-bottom: none; }
         <div class="card-hdr"><span class="card-title">Volume por turno — hoje</span></div>
         <div class="bar-row"><span class="bar-tag">T1</span>
           <div class="bar-tr"><div class="bar-fi t1" id="b-t1" style="width:0%"></div></div>
-          <span class="bar-n" id="n-t1">0</span>
+          <span class="bar-n" id="n-t1">0%</span>
         </div>
         <div class="bar-row"><span class="bar-tag">T2</span>
           <div class="bar-tr"><div class="bar-fi t2" id="b-t2" style="width:0%"></div></div>
-          <span class="bar-n" id="n-t2">0</span>
+          <span class="bar-n" id="n-t2">0%</span>
         </div>
         <div class="bar-row"><span class="bar-tag">T3</span>
           <div class="bar-tr"><div class="bar-fi t3" id="b-t3" style="width:0%"></div></div>
-          <span class="bar-n" id="n-t3">0</span>
+          <span class="bar-n" id="n-t3">0%</span>
         </div>
-        <div class="total-row">Total hoje: <b id="total-hoje">0</b> carregamentos</div>
+        <div class="total-row">Realizado/Planejado: <b id="total-hoje">0/0</b></div>
       </div>
 
       <!-- Plano veículos -->
@@ -335,7 +335,7 @@ tr:last-child td { border-bottom: none; }
 //  ▼▼▼  ÚNICA COISA QUE VOCÊ PRECISA ALTERAR  ▼▼▼
 //  Cole aqui a URL gerada no Deploy do Apps Script
 // ════════════════════════════════════════════════════════════
-const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbwwNMFsA4m3KrUP3BN4lxauu0rC-DHgifq24wdutpqwt4zsr2XzgSuljvOrNDWwg1q8/exec';
+const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbx-T6We-wW9KSQ7X4JK5BOwbgskP44Iq9KVOVZpGOtThanGK31G45BOC0Ex7MiBRxE/exec';
 
 //  Intervalo de atualização automática (em segundos)
 const INTERVALO_SEG = 300; // 5 minutos — mude à vontade
@@ -467,17 +467,32 @@ function renderDocas(docas) {
 
 // ── TURNOS ────────────────────────────────────────────────
 function renderTurnos(vol) {
-  const vals = [vol.T1||0, vol.T2||0, vol.T3||0];
-  const max  = Math.max(...vals, 1);
-  ['t1','t2','t3'].forEach((t, i) => {
-    const v   = vals[i];
-    const pct = Math.round((v / max) * 88);
-    const fi  = document.getElementById('b-' + t);
-    const nu  = document.getElementById('n-' + t);
-    if (fi) { fi.style.width = pct + '%'; fi.textContent = v > 0 ? v : ''; }
-    if (nu)   nu.textContent = v;
+  const turnos = ['T1','T2','T3'];
+  const tags   = ['t1','t2','t3'];
+  let totalPlan = 0, totalReal = 0;
+  const maxPlan = Math.max(...turnos.map(t => (vol[t]||{}).planejado||0), 1);
+
+  turnos.forEach((T, i) => {
+    const t    = tags[i];
+    const data = vol[T] || { planejado: 0, realizado: 0 };
+    const plan = data.planejado || 0;
+    const real = data.realizado || 0;
+    totalPlan += plan; totalReal += real;
+
+    const pct  = Math.round((plan / maxPlan) * 88);
+    const pctR = plan > 0 ? Math.round((real / plan) * 100) : 0;
+
+    const fi = document.getElementById('b-' + t);
+    const nu = document.getElementById('n-' + t);
+    if (fi) {
+      fi.style.width = pct + '%';
+      fi.textContent = plan > 0 ? real + '/' + plan : '';
+    }
+    if (nu) nu.textContent = pctR + '%';
   });
-  document.getElementById('total-hoje').textContent = vals.reduce((a,b)=>a+b,0);
+
+  document.getElementById('total-hoje').textContent =
+    totalReal + '/' + totalPlan;
 }
 
 // ── GRÁFICO ───────────────────────────────────────────────
