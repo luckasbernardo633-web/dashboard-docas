@@ -404,7 +404,7 @@ function reiniciarContagem() {
 
 // ── RENDERIZAÇÃO PRINCIPAL ────────────────────────────────
 function renderizar(d) {
-  docasCache = d.docas || [];
+  docasCache = d.statusDocas || d.docas || [];
   renderMetricas(docasCache);
   renderFiltros(docasCache);
   renderDocas(docasCache);
