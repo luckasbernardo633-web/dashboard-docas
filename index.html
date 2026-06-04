@@ -1,618 +1,225 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Operacional — Docas</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-/* ════════════════════════════════════════════
-   CONFIGURAÇÃO RÁPIDA
-   Substitua a URL abaixo (linha ~20 do script)
-   ════════════════════════════════════════════ */
+// ============================================================
+//  DASHBOARD DOCAS — Google Apps Script — versão final
+//  Aba: "Carregamentos | 3P"
+//  Cabeçalhos na linha 3 (índice 2)
+// ============================================================
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+const SHEET_ID = '1FgSbJNBg0l4GWcVYir8RZun1hNN2sugTrsl1-EVE2DY';
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --green:     #3B6D11; --green-bg:  #EAF3DE; --green-bd:  #97C459;
-  --amber:     #854F0B; --amber-bg:  #FAEEDA; --amber-bd:  #EF9F27;
-  --blue:      #185FA5; --blue-bg:   #E6F1FB; --blue-bd:   #85B7EB;
-  --red:       #A32D2D; --red-bg:    #FCEBEB; --red-bd:    #F09595;
-  --gray:      #5F5E5A; --gray-bg:   #F1EFE8; --gray-bd:   #B4B2A9;
-  --purple:    #534AB7; --purple-bg: #EEEDFE; --purple-bd: #AFA9EC;
-  --bg:        #F4F3F0;
-  --surface:   #FFFFFF;
-  --text:      #1E1E1C;
-  --muted:     #6B6A66;
-  --border:    rgba(0,0,0,0.09);
-  --r:         10px;
-  --r-lg:      14px;
+function doGet(e) {
+  const output = ContentService
+    .createTextOutput(JSON.stringify(obterDados()))
+    .setMimeType(ContentService.MimeType.JSON);
+  return output;
 }
 
-body {
-  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.55;
-  min-height: 100vh;
+function doOptions(e) {
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
-/* ── HEADER ─────────────────────────────── */
-.hdr {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 24px;
-  display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 10;
-}
-.hdr-left  { display: flex; align-items: center; gap: 10px; }
-.hdr-title { font-size: 15px; font-weight: 600; letter-spacing: -.02em; }
-.hdr-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
-
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-.dot.loading { background: var(--amber); animation: blink 1.2s infinite; }
-.dot.error   { background: var(--red); }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-.hdr-right { display: flex; align-items: center; gap: 10px; }
-
-.tag-intervalo {
-  font-size: 11px; color: var(--muted);
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: 20px; padding: 3px 10px;
-}
-
-.btn {
-  display: flex; align-items: center; gap: 5px;
-  padding: 5px 12px; border-radius: var(--r);
-  border: 1px solid var(--border); background: var(--surface);
-  font-size: 11px; color: var(--muted); cursor: pointer;
-  font-family: inherit; transition: background .12s;
-}
-.btn:hover { background: var(--bg); }
-.btn svg   { width: 13px; height: 13px; stroke: currentColor; flex-shrink: 0; }
-.btn.girando svg { animation: girar .65s linear infinite; }
-@keyframes girar { to { transform: rotate(360deg); } }
-
-/* ── LAYOUT ─────────────────────────────── */
-.main { padding: 18px 24px; max-width: 1440px; margin: 0 auto; }
-
-/* ── MÉTRICAS ────────────────────────────── */
-.metricas {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.met {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 14px 18px;
-}
-.met-label { font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .07em; color: var(--muted); margin-bottom: 4px; }
-.met-val   { font-size: 30px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
-.met-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; }
-.met.verde   .met-val { color: var(--green);  }
-.met.laranja .met-val { color: var(--amber);  }
-.met.azul    .met-val { color: var(--blue);   }
-.met.verm    .met-val { color: var(--red);    }
-
-/* ── GRID DE CARDS ───────────────────────── */
-.row   { display: grid; gap: 12px; margin-bottom: 12px; }
-.row-3 { grid-template-columns: 2fr 1fr; }
-.row-2 { grid-template-columns: 1fr 1fr; }
-.col   { display: flex; flex-direction: column; gap: 12px; }
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 16px 18px;
-  flex: 1;
-}
-.card-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px;
-}
-.card-title {
-  font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .07em; color: var(--muted);
-}
-
-/* ── FILTROS ─────────────────────────────── */
-.filtros { display: flex; flex-wrap: wrap; gap: 6px; }
-.fb {
-  padding: 3px 10px; border-radius: 20px;
-  border: 1px solid var(--border); background: var(--bg);
-  font-size: 10px; font-weight: 600; cursor: pointer;
-  color: var(--muted); font-family: inherit; transition: all .12s;
-}
-.fb.on { background: var(--text); color: #fff; border-color: var(--text); }
-
-/* ── LEGENDA ─────────────────────────────── */
-.leg { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.leg-i { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
-.leg-d { width: 8px; height: 8px; border-radius: 2px; }
-
-/* ── DOCAS ───────────────────────────────── */
-.docas-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 7px;
-}
-.dc {
-  border-radius: var(--r); padding: 9px 11px;
-  border: 1px solid transparent; cursor: default;
-  transition: transform .1s, box-shadow .1s;
-}
-.dc:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,.07); }
-.dc-num  { font-size: 9px;  font-weight: 500; opacity: .65; margin-bottom: 1px; }
-.dc-dest { font-size: 12px; font-weight: 700; }
-.dc-st   { font-size: 9px;  margin-top: 3px; opacity: .85; }
-.dc.completa   { background: var(--green-bg);  border-color: var(--green-bd);  color: var(--green);  }
-.dc.aguardando { background: var(--amber-bg);  border-color: var(--amber-bd);  color: var(--amber);  }
-.dc.carregando { background: var(--purple-bg); border-color: var(--purple-bd); color: var(--purple); }
-.dc.livre      { background: var(--blue-bg);   border-color: var(--blue-bd);   color: var(--blue);   }
-.dc.bloqueada  { background: var(--red-bg);    border-color: var(--red-bd);    color: var(--red);    }
-.dc.insumo     { background: var(--gray-bg);   border-color: var(--gray-bd);   color: var(--gray);   }
-
-/* ── BARRAS ──────────────────────────────── */
-.bar-row  { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-.bar-tag  { font-size: 11px; font-weight: 600; width: 20px; }
-.bar-tr   { flex: 1; height: 26px; background: var(--bg); border-radius: 5px; overflow: hidden; }
-.bar-fi   { height: 100%; border-radius: 5px; display: flex; align-items: center;
-  padding-left: 9px; font-size: 11px; font-weight: 600; color: #fff;
-  transition: width .7s cubic-bezier(.4,0,.2,1); min-width: 0; }
-.bar-fi.t1 { background: var(--blue);  }
-.bar-fi.t2 { background: var(--green); }
-.bar-fi.t3 { background: var(--amber); }
-.bar-n    { font-size: 11px; color: var(--muted); min-width: 22px; text-align: right; }
-.total-row { font-size: 11px; color: var(--muted); margin-top: 10px; }
-.total-row b { color: var(--text); }
-
-/* ── PLANO ───────────────────────────────── */
-.plano-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
-  gap: 7px;
-}
-.pl { background: var(--bg); border-radius: var(--r); padding: 9px 6px; text-align: center; }
-.pl-n  { font-size: 18px; font-weight: 700; color: var(--text); line-height: 1; }
-.pl-d  { font-size: 10px; color: var(--muted); margin-top: 3px; }
-
-/* ── TABELA PERDAS ───────────────────────── */
-table { width: 100%; border-collapse: collapse; }
-th {
-  text-align: left; font-size: 10px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
-  padding: 0 0 8px; border-bottom: 1px solid var(--border);
-}
-td { padding: 6px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
-tr:last-child td { border-bottom: none; }
-
-.badge {
-  display: inline-block; padding: 2px 7px; border-radius: 20px;
-  font-size: 9px; font-weight: 700; letter-spacing: .03em;
-}
-.badge.verm   { background: var(--red-bg);   color: var(--red);   }
-.badge.laranja { background: var(--amber-bg); color: var(--amber); }
-.badge.cinza  { background: var(--gray-bg);  color: var(--gray);  }
-
-/* ── ESTADO VAZIO ────────────────────────── */
-.vazio { text-align: center; padding: 28px 12px; color: var(--muted); font-size: 12px; }
-
-/* ── RESPONSIVO ──────────────────────────── */
-@media (max-width: 960px) {
-  .metricas        { grid-template-columns: repeat(2,1fr); }
-  .row-3, .row-2   { grid-template-columns: 1fr; }
-}
-@media (max-width: 520px) {
-  .main { padding: 12px; }
-  .hdr  { padding: 10px 14px; }
-  .tag-intervalo { display: none; }
-}
-</style>
-</head>
-<body>
-
-<!-- ── HEADER ──────────────────────────────────────────── -->
-<header class="hdr">
-  <div class="hdr-left">
-    <div class="dot loading" id="dot"></div>
-    <div>
-      <div class="hdr-title">Dashboard operacional — docas</div>
-      <div class="hdr-sub" id="sub-ts">Aguardando dados...</div>
-    </div>
-  </div>
-  <div class="hdr-right">
-    <span class="tag-intervalo" id="tag-timer">Atualiza em 5:00</span>
-    <button class="btn" id="btn-ref" onclick="buscar(true)">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-      </svg>
-      Atualizar agora
-    </button>
-  </div>
-</header>
-
-<!-- ── MAIN ────────────────────────────────────────────── -->
-<main class="main">
-
-  <!-- Métricas resumo -->
-  <div class="metricas">
-    <div class="met verde">
-      <div class="met-label">Completas</div>
-      <div class="met-val" id="m-c">—</div>
-      <div class="met-sub">100% carregadas</div>
-    </div>
-    <div class="met laranja">
-      <div class="met-label">Ag. piso</div>
-      <div class="met-val" id="m-a">—</div>
-      <div class="met-sub">Falta de piso</div>
-    </div>
-    <div class="met azul">
-      <div class="met-label">Livres</div>
-      <div class="met-val" id="m-l">—</div>
-      <div class="met-sub">Sem carreta</div>
-    </div>
-    <div class="met verm">
-      <div class="met-label">Bloqueadas</div>
-      <div class="met-val" id="m-b">—</div>
-      <div class="met-sub">Fora de uso</div>
-    </div>
-  </div>
-
-  <!-- Docas + coluna direita -->
-  <div class="row row-3">
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-title">Status das docas</span>
-        <div class="filtros" id="filtros"></div>
-      </div>
-      <div class="leg">
-        <div class="leg-i"><div class="leg-d" style="background:var(--green-bd)"></div>Completa</div>
-        <div class="leg-i"><div class="leg-d" style="background:var(--amber-bd)"></div>Ag. piso</div>
-        <div class="leg-i"><div class="leg-d" style="background:var(--purple-bd)"></div>Carregando</div>
-        <div class="leg-i"><div class="leg-d" style="background:var(--blue-bd)"></div>Livre</div>
-        <div class="leg-i"><div class="leg-d" style="background:var(--red-bd)"></div>Bloqueada</div>
-        <div class="leg-i"><div class="leg-d" style="background:var(--gray-bd)"></div>Insumo</div>
-      </div>
-      <div class="docas-grid" id="docas-grid">
-        <div class="vazio">Carregando docas...</div>
-      </div>
-    </div>
-
-    <div class="col">
-      <!-- Volume por turno -->
-      <div class="card">
-        <div class="card-hdr"><span class="card-title">Volume por turno — hoje</span></div>
-        <div class="bar-row"><span class="bar-tag">T1</span>
-          <div class="bar-tr"><div class="bar-fi t1" id="b-t1" style="width:0%"></div></div>
-          <span class="bar-n" id="n-t1">0%</span>
-        </div>
-        <div class="bar-row"><span class="bar-tag">T2</span>
-          <div class="bar-tr"><div class="bar-fi t2" id="b-t2" style="width:0%"></div></div>
-          <span class="bar-n" id="n-t2">0%</span>
-        </div>
-        <div class="bar-row"><span class="bar-tag">T3</span>
-          <div class="bar-tr"><div class="bar-fi t3" id="b-t3" style="width:0%"></div></div>
-          <span class="bar-n" id="n-t3">0%</span>
-        </div>
-        <div class="total-row">Realizado/Planejado: <b id="total-hoje">0/0</b></div>
-      </div>
-
-      <!-- D+1 -->
-      <div class="card" id="card-d1">
-        <div class="card-hdr"><span class="card-title">D+1 — amanhã</span></div>
-        <div id="d1-wrap" style="font-size:12px; color:var(--muted);">Carregando...</div>
-      </div>
-
-      <!-- Plano veículos -->
-      <div class="card">
-        <div class="card-hdr"><span class="card-title">Plano de veículos — D0</span></div>
-        <div class="plano-grid" id="plano-grid"><div class="vazio">—</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Histórico + Perdas -->
-  <div class="row row-2">
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Histórico — últimos 7 dias</span></div>
-      <div style="position:relative; height:190px;">
-        <canvas id="chart" role="img" aria-label="Volume de carregamentos últimos 7 dias">Histórico de volume por dia</canvas>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Perdas de CPT — últimos 7 dias</span></div>
-      <div id="perdas-wrap"><div class="vazio">Carregando...</div></div>
-    </div>
-  </div>
-
-</main>
-
-<script>
-// ════════════════════════════════════════════════════════════
-//  ▼▼▼  ÚNICA COISA QUE VOCÊ PRECISA ALTERAR  ▼▼▼
-//  Cole aqui a URL gerada no Deploy do Apps Script
-// ════════════════════════════════════════════════════════════
-const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbxv_lZl2inuO0ilGsufGfIEby5yLQNh_8_4WS9UyQsUeoqZlJnepKVrQ8CLLaPWYCrk/exec';
-
-//  Intervalo de atualização automática (em segundos)
-const INTERVALO_SEG = 300; // 5 minutos — mude à vontade
-
-// ════════════════════════════════════════════════════════════
-
-let grafico   = null;
-let filtroAtivo = 'todos';
-let docasCache  = [];
-let timerSeg    = INTERVALO_SEG;
-let countdownId = null;
-
-// ── BUSCA DE DADOS ────────────────────────────────────────
-async function buscar(manual = false) {
-  setStatus('loading');
-  document.getElementById('btn-ref').classList.add('girando');
-
+function obterDados() {
   try {
-    // mode: 'cors' funciona quando Apps Script está configurado
-    // para "qualquer pessoa". Para uso local (file://) o navegador
-    // pode bloquear — nesse caso abra o HTML via um servidor local
-    // simples: python -m http.server 8080
-    const r = await fetch(URL_SCRIPT + '?_=' + Date.now(), { mode: 'cors' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const json = await r.json();
-    if (!json.ok) throw new Error(json.erro || 'Erro no script');
+    const ss    = SpreadsheetApp.openById(SHEET_ID);
+    const aba   = ss.getSheetByName('Carregamentos | 3P') || ss.getSheets()[0];
+    const dados = aba.getDataRange().getValues();
 
-    renderizar(json);
-    setStatus('ok');
-    atualizarTimestamp(json.ultimaAtualizacao);
-    reiniciarContagem();
-  } catch (err) {
-    console.error(err);
-    setStatus('error');
-    document.getElementById('sub-ts').textContent =
-      'Erro ao carregar — verifique a URL do script (' + err.message + ')';
-  } finally {
-    document.getElementById('btn-ref').classList.remove('girando');
-  }
-}
+    // Linha 3 = cabeçalhos (índice 2)
+    const headers = dados[2].map(h => String(h).trim());
 
-function setStatus(s) {
-  const d = document.getElementById('dot');
-  d.className = 'dot' + (s === 'ok' ? '' : ' ' + s);
-}
-
-function atualizarTimestamp(ts) {
-  const d = ts ? new Date(ts) : new Date();
-  const data = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
-  const hora = d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  document.getElementById('sub-ts').textContent = '⏱ Última atualização: ' + data + ' às ' + hora;
-}
-
-// ── COUNTDOWN ─────────────────────────────────────────────
-function reiniciarContagem() {
-  if (countdownId) clearInterval(countdownId);
-  timerSeg = INTERVALO_SEG;
-  countdownId = setInterval(() => {
-    timerSeg--;
-    const m = String(Math.floor(timerSeg / 60)).padStart(1,'0');
-    const s = String(timerSeg % 60).padStart(2,'0');
-    document.getElementById('tag-timer').textContent = 'Atualiza em ' + m + ':' + s;
-    if (timerSeg <= 0) { buscar(); }
-  }, 1000);
-}
-
-// ── RENDERIZAÇÃO PRINCIPAL ────────────────────────────────
-function renderizar(d) {
-  docasCache = d.statusDocas || d.docas || [];
-  renderMetricas(docasCache);
-  renderFiltros(docasCache);
-  renderDocas(docasCache);
-  renderTurnos(d.volumePorTurno || {});
-  renderGrafico(d.historicoVolume || []);
-  renderPerdas(d.perdas || []);
-  renderPlano(d.planoVeiculos || []);
-  renderD1(d.d1 || null);
-}
-
-// ── MÉTRICAS ──────────────────────────────────────────────
-function renderMetricas(docas) {
-  const c = { completa:0, aguardando:0, livre:0, bloqueada:0 };
-  docas.forEach(d => { if (c[d.status] !== undefined) c[d.status]++; });
-  document.getElementById('m-c').textContent = c.completa;
-  document.getElementById('m-a').textContent = c.aguardando;
-  document.getElementById('m-l').textContent = c.livre;
-  document.getElementById('m-b').textContent = c.bloqueada;
-}
-
-// ── FILTROS ───────────────────────────────────────────────
-const STATUS_LABEL = {
-  todos:'Todas', completa:'Completa', aguardando:'Ag. piso',
-  carregando:'Carregando', livre:'Livre', bloqueada:'Bloqueada', insumo:'Insumo'
-};
-
-function renderFiltros(docas) {
-  const el = document.getElementById('filtros');
-  if (el.children.length > 0) return; // já renderizado
-
-  Object.entries(STATUS_LABEL).forEach(([k, v]) => {
-    const b = document.createElement('button');
-    b.className = 'fb' + (k === 'todos' ? ' on' : '');
-    b.textContent = v;
-    b.onclick = () => {
-      filtroAtivo = k;
-      document.querySelectorAll('.fb').forEach(x => x.classList.remove('on'));
-      b.classList.add('on');
-      renderDocas(docasCache);
+    const col = {
+      data:    headers.indexOf('Data'),
+      turno:   headers.indexOf('Turno'),
+      destino: headers.indexOf('Destino'),
+      tipo:    headers.indexOf('Tipo de Veículo'),
+      cpt:     headers.indexOf('CPT'),
+      stPux:   headers.indexOf('Status Puxada'),
+      stCar:   headers.indexOf('Status Carregamento'),
+      doca:    headers.indexOf('Stage Out'), // doca do veículo
+      transp:  headers.indexOf('Transportadora'),
+      unid:    headers.indexOf('Unidades'),
+      just:    headers.indexOf('Justificativo (Perda do CPT)'),
     };
-    el.appendChild(b);
-  });
-}
 
-function renderDocas(docas) {
-  const grid = document.getElementById('docas-grid');
-  const lista = filtroAtivo === 'todos' ? docas : docas.filter(d => d.status === filtroAtivo);
+    const limite7  = new Date(); limite7.setDate(limite7.getDate() - 7);
+    const todos    = [];
+    let dataMaisRecente = null;
 
-  if (!lista.length) {
-    grid.innerHTML = '<div class="vazio">Nenhuma doca encontrada.</div>';
-    return;
-  }
+    // Dados a partir da linha 4 (índice 3)
+    for (let i = 3; i < dados.length; i++) {
+      const linha   = dados[i];
+      const celData = linha[col.data];
+      if (!celData || !(celData instanceof Date)) continue;
 
-  grid.innerHTML = lista.map(d => `
-    <div class="dc ${d.status}" title="Doca ${d.doca} — ${d.carreta || 'S/ carreta'} | CPT: ${d.cpt || '—'}">
-      <div class="dc-num">Doca ${d.doca}</div>
-      <div class="dc-dest">${d.sigla || '—'}</div>
-      <div class="dc-st">${STATUS_LABEL[d.status] || d.status}</div>
-    </div>`).join('');
-}
+      const dataStr = fmt(celData);
+      if (!dataMaisRecente || celData > dataMaisRecente) dataMaisRecente = celData;
 
-// ── TURNOS ────────────────────────────────────────────────
-function renderTurnos(vol) {
-  const turnos = ['T1','T2','T3'];
-  const tags   = ['t1','t2','t3'];
-  let totalPlan = 0, totalReal = 0;
-  const maxPlan = Math.max(...turnos.map(t => (vol[t]||{}).planejado||0), 1);
-
-  turnos.forEach((T, i) => {
-    const t    = tags[i];
-    const data = vol[T] || { planejado: 0, realizado: 0 };
-    const plan = data.planejado || 0;
-    const real = data.realizado || 0;
-    totalPlan += plan; totalReal += real;
-
-    const pct  = Math.round((plan / maxPlan) * 88);
-    const pctR = plan > 0 ? Math.round((real / plan) * 100) : 0;
-
-    const fi = document.getElementById('b-' + t);
-    const nu = document.getElementById('n-' + t);
-    if (fi) {
-      fi.style.width = pct + '%';
-      fi.textContent = plan > 0 ? real + '/' + plan : '';
+      todos.push({
+        data:    dataStr,
+        dataObj: celData,
+        turno:   norm(linha[col.turno]),
+        destino: norm(linha[col.destino]),
+        tipo:    norm(linha[col.tipo]),
+        cpt:     norm(linha[col.cpt]),
+        stPux:   norm(linha[col.stPux]),
+        stCar:   norm(linha[col.stCar]),
+        doca:    norm(linha[col.doca]),
+        transp:  norm(linha[col.transp]),
+        unid:    Number(linha[col.unid] || 0),
+        just:    norm(linha[col.just]),
+      });
     }
-    if (nu) nu.textContent = pctR + '%';
-  });
 
-  document.getElementById('total-hoje').textContent =
-    totalReal + '/' + totalPlan;
-}
+    // Usa a data mais recente disponível na planilha
+    const dataAlvo      = fmt(dataMaisRecente || new Date());
+    const registrosAlvo = todos.filter(r => r.data === dataAlvo);
+    const registros7    = todos.filter(r => r.dataObj >= limite7);
 
-// ── GRÁFICO ───────────────────────────────────────────────
-function renderGrafico(hist) {
-  if (grafico) { grafico.destroy(); grafico = null; }
-  const labels = hist.map(h => h.data);
-  const values = hist.map(h => h.total);
-  const cores  = values.map((_,i) => i === values.length - 1 ? '#EF9F27' : '#378ADD');
+    // Debug: pega primeiros 5 registros com doca preenchida
+    const comDoca = registrosAlvo.filter(r => r.doca && r.doca !== '');
+    const debugDocas = comDoca.slice(0, 5).map(r => ({
+      doca: r.doca, stPux: r.stPux, stCar: r.stCar,
+      status: mapStatus(r.stCar, r.stPux)
+    }));
 
-  const ctx = document.getElementById('chart');
-  if (!ctx) return;
+    // D+1: registros do dia seguinte
+    const amanha = new Date(dataMaisRecente || new Date());
+    amanha.setDate(amanha.getDate() + 1);
+    const amanhaStr = fmt(amanha);
+    const registrosD1 = todos.filter(r => r.data === amanhaStr);
 
-  grafico = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ data: values, backgroundColor: cores, borderRadius: 4, borderSkipped: false }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: c => c.raw + (c.dataIndex === values.length-1 ? ' (parcial)' : '') } }
+    return {
+      ok:               true,
+      dataExibida:      dataAlvo,
+      totalRegistros:   todos.length,
+      totalComDoca:     comDoca.length,
+      debugDocas:       debugDocas,
+      carregamentos:    registrosAlvo,
+      volumePorTurno:   calcVolumeTurno(registrosAlvo),
+      statusDocas:      calcStatusDocas(registrosAlvo),
+      historicoVolume:  calcHistorico(todos),
+      perdas:           calcPerdas(registros7),
+      planoVeiculos:    calcPlano(registrosAlvo),
+      d1: {
+        data:          amanhaStr,
+        total:         registrosD1.length,
+        volumePorTurno: calcVolumeTurno(registrosD1),
+        completas:     registrosD1.filter(r => {
+          const c = r.stCar.toUpperCase();
+          return c.includes('COMPLETA') || c.includes('CARREGADA') || c.includes('ENVIADA');
+        }).length,
       },
-      scales: {
-        x: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ display:false } },
-        y: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ color:'rgba(0,0,0,0.04)' }, min:0 }
-      }
+      ultimaAtualizacao: new Date().toISOString()
+    };
+
+  } catch (err) {
+    return { ok: false, erro: err.message };
+  }
+}
+
+function norm(v) { return String(v === null || v === undefined ? '' : v).trim(); }
+function fmt(d)  { return Utilities.formatDate(d, 'America/Sao_Paulo', 'dd/MM/yyyy'); }
+
+function calcVolumeTurno(regs) {
+  const plan = { T1: 0, T2: 0, T3: 0 };
+  const real = { T1: 0, T2: 0, T3: 0 };
+  const statusRealizado = ['CARREGADA', 'ENVIADA'];
+
+  regs.forEach(r => {
+    const t = r.turno.replace(/\s/g,'').toUpperCase();
+    let chave = null;
+    if (t.includes('T1') || t === '1') chave = 'T1';
+    else if (t.includes('T2') || t === '2') chave = 'T2';
+    else if (t.includes('T3') || t === '3') chave = 'T3';
+    if (!chave) return;
+
+    plan[chave]++; // planejado = todas as linhas
+
+    const stCar = r.stCar.toUpperCase().trim();
+    if (statusRealizado.some(s => stCar.includes(s))) {
+      real[chave]++;
     }
   });
+
+  return {
+    T1: { planejado: plan.T1, realizado: real.T1 },
+    T2: { planejado: plan.T2, realizado: real.T2 },
+    T3: { planejado: plan.T3, realizado: real.T3 },
+  };
 }
 
-// ── PERDAS ────────────────────────────────────────────────
-function badgeCls(status, motivo) {
-  const s = (status + motivo).toUpperCase();
-  if (s.includes('FALTA DE PISO') || s.includes('INFRUTÍFERO')) return 'laranja';
-  if (s.includes('PERDIDO'))                                      return 'verm';
-  return 'cinza';
+function calcStatusDocas(regs) {
+  const mapa = {};
+  const prio = { completa:5, carregando:3, aguardando:2, livre:1, outro:0 };
+  regs.forEach(r => {
+    if (!r.doca) return;
+    const st = mapStatus(r.stCar, r.stPux);
+    if (!mapa[r.doca] || (prio[st]||0) > (prio[mapa[r.doca].status]||0)) {
+      mapa[r.doca] = { doca: r.doca, sigla: r.destino, status: st, transp: r.transp };
+    }
+  });
+  return Object.values(mapa);
 }
 
-function renderPerdas(perdas) {
-  const wrap = document.getElementById('perdas-wrap');
-  if (!perdas.length) {
-    wrap.innerHTML = '<div class="vazio">Sem perdas nos últimos 7 dias.</div>';
-    return;
-  }
-  const linhas = perdas.slice(0,10).map(p => {
-    const cls    = badgeCls(p.status, p.motivo);
-    const motivo = (p.motivo || p.status).substring(0,26);
-    return `<tr>
-      <td>${p.data}</td>
-      <td>${p.turno}</td>
-      <td>${p.destino || '—'}</td>
-      <td><span class="badge ${cls}">${motivo}</span></td>
-    </tr>`;
-  }).join('');
-  wrap.innerHTML = `
-    <table>
-      <thead><tr><th>Data</th><th>Turno</th><th>Destino</th><th>Motivo</th></tr></thead>
-      <tbody>${linhas}</tbody>
-    </table>
-    ${perdas.length > 10 ? `<p style="font-size:10px;color:var(--muted);margin-top:8px">+ ${perdas.length-10} registros</p>` : ''}`;
+function mapStatus(stCar, stPux) {
+  const p = stPux.toUpperCase().trim();
+  const c = stCar.toUpperCase().trim();
+
+  // Ag. piso: sendo abastecida ainda
+  if (p.includes('AG COMP') || p.includes('AGUARDANDO'))      return 'aguardando';
+
+  // Livre: puxada finalizada + já carregada ou enviada (doca liberada)
+  if (p.includes('FINALIZADO') && (c.includes('CARREGADA') || c.includes('ENVIADA'))) return 'livre';
+
+  // Carregando: puxada finalizada + caminhão carregando agora
+  if (p.includes('FINALIZADO') && c.includes('CARREGANDO'))   return 'carregando';
+
+  // Completa: puxada finalizada + pronta para carregar (sem status de carregamento ou completa)
+  if (p.includes('FINALIZADO') && (c === '' || c.includes('COMPLETA') || c.includes('POSTERGADO'))) return 'completa';
+
+  // Bloqueada / Insumo
+  if (c.includes('BLOQUEADA')) return 'bloqueada';
+  if (c.includes('INSUMO'))    return 'insumo';
+
+  // Sem dados
+  if (!p && !c) return 'livre';
+  return 'outro';
 }
 
-// ── PLANO ─────────────────────────────────────────────────
-function renderPlano(plano) {
-  const grid = document.getElementById('plano-grid');
-  if (!plano.length) { grid.innerHTML = '<div class="vazio">—</div>'; return; }
-  const ord = [...plano].sort((a,b) => b.veiculos - a.veiculos);
-  grid.innerHTML = ord.map(p =>
-    `<div class="pl"><div class="pl-n">${p.veiculos}</div><div class="pl-d">${p.destino}</div></div>`
-  ).join('');
+function calcHistorico(regs) {
+  const cont = {};
+  regs.forEach(r => { cont[r.data] = (cont[r.data] || 0) + 1; });
+  return Object.entries(cont)
+    .sort(([a],[b]) => {
+      const n = s => s.split('/').reverse().join('');
+      return n(a).localeCompare(n(b));
+    })
+    .slice(-15) // últimos 15 dias com dados
+    .map(([data, total]) => ({ data, total }));
 }
 
-// ── D+1 ──────────────────────────────────────────────────
-function renderD1(d1) {
-  const wrap = document.getElementById('d1-wrap');
-  if (!d1 || !d1.total) {
-    wrap.innerHTML = '<div class="vazio">Sem registros para amanhã.</div>';
-    return;
-  }
-  const vol = d1.volumePorTurno || {};
-  const pct = d1.total > 0 ? Math.round((d1.completas / d1.total) * 100) : 0;
-  wrap.innerHTML = \`
-    <div style="margin-bottom:10px;">
-      <span style="font-size:11px;color:var(--muted);">Data:</span>
-      <strong style="color:var(--text);margin-left:4px;">\${d1.data}</strong>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <div style="flex:1;background:var(--bg);border-radius:var(--r);padding:10px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:var(--text);">\${d1.total}</div>
-        <div style="font-size:10px;color:var(--muted);">Planejado</div>
-      </div>
-      <div style="flex:1;background:var(--green-bg);border-radius:var(--r);padding:10px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:var(--green);">\${d1.completas}</div>
-        <div style="font-size:10px;color:var(--green);">Prontos</div>
-      </div>
-      <div style="flex:1;background:var(--blue-bg);border-radius:var(--r);padding:10px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:var(--blue);">\${pct}%</div>
-        <div style="font-size:10px;color:var(--blue);">Concluído</div>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--muted);display:flex;gap:12px;">
-      <span>T1: <strong>\${(vol.T1||{}).planejado||0}</strong></span>
-      <span>T2: <strong>\${(vol.T2||{}).planejado||0}</strong></span>
-      <span>T3: <strong>\${(vol.T3||{}).planejado||0}</strong></span>
-    </div>
-  \`;
+function calcPerdas(regs) {
+  const gatilhos = ['FALTA DE PISO','INFRUTÍFERO','NOSHOW','CANCELADO','PERDIDO','AG COMP'];
+  return regs.filter(r => {
+    const s = (r.stCar + ' ' + r.stPux + ' ' + r.just).toUpperCase();
+    return gatilhos.some(g => s.includes(g));
+  }).map(r => ({
+    data:    r.data,
+    turno:   r.turno,
+    destino: r.destino,
+    status:  r.stCar || r.stPux,
+    motivo:  r.just || r.stPux || r.stCar,
+  }));
 }
 
-// ── INÍCIO ────────────────────────────────────────────────
-buscar();
-reiniciarContagem();
-</script>
-</body>
-</html>
+function calcPlano(regs) {
+  const cont = {};
+  regs.forEach(r => {
+    if (!r.destino) return;
+    cont[r.destino] = (cont[r.destino] || 0) + 1;
+  });
+  return Object.entries(cont)
+    .map(([destino, veiculos]) => ({ destino, veiculos }))
+    .sort((a,b) => b.veiculos - a.veiculos);
+}
