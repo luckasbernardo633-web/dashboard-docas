@@ -306,6 +306,12 @@ tr:last-child td { border-bottom: none; }
         <div class="total-row">Realizado/Planejado: <b id="total-hoje">0/0</b></div>
       </div>
 
+      <!-- D+1 -->
+      <div class="card" id="card-d1">
+        <div class="card-hdr"><span class="card-title">D+1 — amanhã</span></div>
+        <div id="d1-wrap" style="font-size:12px; color:var(--muted);">Carregando...</div>
+      </div>
+
       <!-- Plano veículos -->
       <div class="card">
         <div class="card-hdr"><span class="card-title">Plano de veículos — D0</span></div>
@@ -412,6 +418,7 @@ function renderizar(d) {
   renderGrafico(d.historicoVolume || []);
   renderPerdas(d.perdas || []);
   renderPlano(d.planoVeiculos || []);
+  renderD1(d.d1 || null);
 }
 
 // ── MÉTRICAS ──────────────────────────────────────────────
@@ -565,6 +572,42 @@ function renderPlano(plano) {
   grid.innerHTML = ord.map(p =>
     `<div class="pl"><div class="pl-n">${p.veiculos}</div><div class="pl-d">${p.destino}</div></div>`
   ).join('');
+}
+
+// ── D+1 ──────────────────────────────────────────────────
+function renderD1(d1) {
+  const wrap = document.getElementById('d1-wrap');
+  if (!d1 || !d1.total) {
+    wrap.innerHTML = '<div class="vazio">Sem registros para amanhã.</div>';
+    return;
+  }
+  const vol = d1.volumePorTurno || {};
+  const pct = d1.total > 0 ? Math.round((d1.completas / d1.total) * 100) : 0;
+  wrap.innerHTML = \`
+    <div style="margin-bottom:10px;">
+      <span style="font-size:11px;color:var(--muted);">Data:</span>
+      <strong style="color:var(--text);margin-left:4px;">\${d1.data}</strong>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div style="flex:1;background:var(--bg);border-radius:var(--r);padding:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--text);">\${d1.total}</div>
+        <div style="font-size:10px;color:var(--muted);">Planejado</div>
+      </div>
+      <div style="flex:1;background:var(--green-bg);border-radius:var(--r);padding:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--green);">\${d1.completas}</div>
+        <div style="font-size:10px;color:var(--green);">Prontos</div>
+      </div>
+      <div style="flex:1;background:var(--blue-bg);border-radius:var(--r);padding:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--blue);">\${pct}%</div>
+        <div style="font-size:10px;color:var(--blue);">Concluído</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);display:flex;gap:12px;">
+      <span>T1: <strong>\${(vol.T1||{}).planejado||0}</strong></span>
+      <span>T2: <strong>\${(vol.T2||{}).planejado||0}</strong></span>
+      <span>T3: <strong>\${(vol.T3||{}).planejado||0}</strong></span>
+    </div>
+  \`;
 }
 
 // ── INÍCIO ────────────────────────────────────────────────
