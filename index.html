@@ -341,7 +341,7 @@ tr:last-child td { border-bottom: none; }
 //  ▼▼▼  ÚNICA COISA QUE VOCÊ PRECISA ALTERAR  ▼▼▼
 //  Cole aqui a URL gerada no Deploy do Apps Script
 // ════════════════════════════════════════════════════════════
-const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbx-T6We-wW9KSQ7X4JK5BOwbgskP44Iq9KVOVZpGOtThanGK31G45BOC0Ex7MiBRxE/exec';
+const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbxv_lZl2inuO0ilGsufGfIEby5yLQNh_8_4WS9UyQsUeoqZlJnepKVrQ8CLLaPWYCrk/exec';
 
 //  Intervalo de atualização automática (em segundos)
 const INTERVALO_SEG = 300; // 5 minutos — mude à vontade
@@ -583,31 +583,33 @@ function renderD1(d1) {
   }
   const vol = d1.volumePorTurno || {};
   const pct = d1.total > 0 ? Math.round((d1.completas / d1.total) * 100) : 0;
-  wrap.innerHTML = \`
-    <div style="margin-bottom:10px;">
-      <span style="font-size:11px;color:var(--muted);">Data:</span>
-      <strong style="color:var(--text);margin-left:4px;">\${d1.data}</strong>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <div style="flex:1;background:var(--bg);border-radius:var(--r);padding:10px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:var(--text);">\${d1.total}</div>
-        <div style="font-size:10px;color:var(--muted);">Planejado</div>
-      </div>
-      <div style="flex:1;background:var(--green-bg);border-radius:var(--r);padding:10px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:var(--green);">\${d1.completas}</div>
-        <div style="font-size:10px;color:var(--green);">Prontos</div>
-      </div>
-      <div style="flex:1;background:var(--blue-bg);border-radius:var(--r);padding:10px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:var(--blue);">\${pct}%</div>
-        <div style="font-size:10px;color:var(--blue);">Concluído</div>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--muted);display:flex;gap:12px;">
-      <span>T1: <strong>\${(vol.T1||{}).planejado||0}</strong></span>
-      <span>T2: <strong>\${(vol.T2||{}).planejado||0}</strong></span>
-      <span>T3: <strong>\${(vol.T3||{}).planejado||0}</strong></span>
-    </div>
-  \`;
+  const t1p = (vol.T1||{}).planejado||0;
+  const t2p = (vol.T2||{}).planejado||0;
+  const t3p = (vol.T3||{}).planejado||0;
+  wrap.innerHTML =
+    '<div style="margin-bottom:10px;">' +
+      '<span style="font-size:11px;color:var(--muted);">Data:</span>' +
+      '<strong style="color:var(--text);margin-left:4px;">' + d1.data + '</strong>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+      '<div style="flex:1;background:var(--bg);border-radius:var(--r);padding:10px;text-align:center;">' +
+        '<div style="font-size:22px;font-weight:700;color:var(--text);">' + d1.total + '</div>' +
+        '<div style="font-size:10px;color:var(--muted);">Planejado</div>' +
+      '</div>' +
+      '<div style="flex:1;background:var(--green-bg);border-radius:var(--r);padding:10px;text-align:center;">' +
+        '<div style="font-size:22px;font-weight:700;color:var(--green);">' + d1.completas + '</div>' +
+        '<div style="font-size:10px;color:var(--green);">Prontos</div>' +
+      '</div>' +
+      '<div style="flex:1;background:var(--blue-bg);border-radius:var(--r);padding:10px;text-align:center;">' +
+        '<div style="font-size:22px;font-weight:700;color:var(--blue);">' + pct + '%</div>' +
+        '<div style="font-size:10px;color:var(--blue);">Concluído</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--muted);display:flex;gap:12px;">' +
+      '<span>T1: <strong>' + t1p + '</strong></span>' +
+      '<span>T2: <strong>' + t2p + '</strong></span>' +
+      '<span>T3: <strong>' + t3p + '</strong></span>' +
+    '</div>';
 }
 
 // ── INÍCIO ────────────────────────────────────────────────
