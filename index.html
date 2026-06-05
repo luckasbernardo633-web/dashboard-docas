@@ -206,6 +206,48 @@ tr:last-child td { border-bottom: none; }
 /* ── ESTADO VAZIO ────────────────────────── */
 .vazio { text-align: center; padding: 28px 12px; color: var(--muted); font-size: 12px; }
 
+/* ── D+1 MELHORADO ───────────────────────── */
+.d1-resumo {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 12px;
+}
+.d1-stat {
+  background: var(--bg); border-radius: var(--r); padding: 10px 8px; text-align: center;
+}
+.d1-stat-val { font-size: 20px; font-weight: 700; line-height: 1; }
+.d1-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.d1-stat.verde { background: var(--green-bg); }
+.d1-stat.verde .d1-stat-val { color: var(--green); }
+.d1-stat.azul  { background: var(--blue-bg); }
+.d1-stat.azul  .d1-stat-val { color: var(--blue); }
+
+.d1-section-title {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--muted); margin: 10px 0 7px;
+}
+
+.d1-turnos { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.d1-turno-row { display: flex; align-items: center; gap: 7px; }
+.d1-turno-tag { font-size: 11px; font-weight: 700; width: 20px; }
+.d1-turno-bar { flex: 1; height: 20px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.d1-turno-fi  {
+  height: 100%; border-radius: 4px; display: flex; align-items: center;
+  padding-left: 8px; font-size: 10px; font-weight: 600; color: #fff;
+  transition: width .7s cubic-bezier(.4,0,.2,1);
+}
+.d1-turno-fi.t1 { background: var(--blue); }
+.d1-turno-fi.t2 { background: var(--green); }
+.d1-turno-fi.t3 { background: var(--amber); }
+.d1-turno-n { font-size: 10px; color: var(--muted); min-width: 18px; text-align: right; }
+
+.d1-destinos {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 5px;
+}
+.d1-dest {
+  background: var(--bg); border-radius: var(--r); padding: 7px 5px; text-align: center;
+}
+.d1-dest-n { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1; }
+.d1-dest-d { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
 /* ── RESPONSIVO ──────────────────────────── */
 @media (max-width: 960px) {
   .metricas        { grid-template-columns: repeat(2,1fr); }
@@ -581,35 +623,68 @@ function renderD1(d1) {
     wrap.innerHTML = '<div class="vazio">Sem registros para amanhã.</div>';
     return;
   }
-  const vol = d1.volumePorTurno || {};
-  const pct = d1.total > 0 ? Math.round((d1.completas / d1.total) * 100) : 0;
-  const t1p = (vol.T1||{}).planejado||0;
-  const t2p = (vol.T2||{}).planejado||0;
-  const t3p = (vol.T3||{}).planejado||0;
-  wrap.innerHTML =
-    '<div style="margin-bottom:10px;">' +
-      '<span style="font-size:11px;color:var(--muted);">Data:</span>' +
-      '<strong style="color:var(--text);margin-left:4px;">' + d1.data + '</strong>' +
-    '</div>' +
-    '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
-      '<div style="flex:1;background:var(--bg);border-radius:var(--r);padding:10px;text-align:center;">' +
-        '<div style="font-size:22px;font-weight:700;color:var(--text);">' + d1.total + '</div>' +
-        '<div style="font-size:10px;color:var(--muted);">Planejado</div>' +
-      '</div>' +
-      '<div style="flex:1;background:var(--green-bg);border-radius:var(--r);padding:10px;text-align:center;">' +
-        '<div style="font-size:22px;font-weight:700;color:var(--green);">' + d1.completas + '</div>' +
-        '<div style="font-size:10px;color:var(--green);">Prontos</div>' +
-      '</div>' +
-      '<div style="flex:1;background:var(--blue-bg);border-radius:var(--r);padding:10px;text-align:center;">' +
-        '<div style="font-size:22px;font-weight:700;color:var(--blue);">' + pct + '%</div>' +
-        '<div style="font-size:10px;color:var(--blue);">Concluído</div>' +
-      '</div>' +
-    '</div>' +
-    '<div style="font-size:11px;color:var(--muted);display:flex;gap:12px;">' +
-      '<span>T1: <strong>' + t1p + '</strong></span>' +
-      '<span>T2: <strong>' + t2p + '</strong></span>' +
-      '<span>T3: <strong>' + t3p + '</strong></span>' +
-    '</div>';
+
+  const vol  = d1.volumePorTurno || {};
+  const pct  = d1.total > 0 ? Math.round((d1.completas / d1.total) * 100) : 0;
+  const turnos = [
+    { id: 'T1', cls: 't1', data: vol.T1 || { planejado:0, realizado:0 } },
+    { id: 'T2', cls: 't2', data: vol.T2 || { planejado:0, realizado:0 } },
+    { id: 'T3', cls: 't3', data: vol.T3 || { planejado:0, realizado:0 } },
+  ];
+  const maxPlan = Math.max(...turnos.map(t => t.data.planejado), 1);
+
+  // Resumo
+  const resumo = `
+    <div class="d1-resumo">
+      <div class="d1-stat">
+        <div class="d1-stat-val">${d1.total}</div>
+        <div class="d1-stat-lbl">Planejado</div>
+      </div>
+      <div class="d1-stat verde">
+        <div class="d1-stat-val">${d1.completas}</div>
+        <div class="d1-stat-lbl">Prontos</div>
+      </div>
+      <div class="d1-stat azul">
+        <div class="d1-stat-val">${pct}%</div>
+        <div class="d1-stat-lbl">Concluído</div>
+      </div>
+    </div>`;
+
+  // Volume por turno
+  const barras = turnos.map(t => {
+    const plan = t.data.planejado || 0;
+    const real = t.data.realizado || 0;
+    const pctW = Math.round((plan / maxPlan) * 88);
+    const pctR = plan > 0 ? Math.round((real / plan) * 100) : 0;
+    return `
+      <div class="d1-turno-row">
+        <span class="d1-turno-tag">${t.id}</span>
+        <div class="d1-turno-bar">
+          <div class="d1-turno-fi ${t.cls}" style="width:${pctW}%">
+            ${plan > 0 ? real + '/' + plan : ''}
+          </div>
+        </div>
+        <span class="d1-turno-n">${pctR}%</span>
+      </div>`;
+  }).join('');
+
+  // Destinos planejados
+  const destinos = d1.planoVeiculos || [];
+  const destinosHtml = destinos.length
+    ? `<div class="d1-section-title">Destinos planejados</div>
+       <div class="d1-destinos">
+         ${destinos.map(p => `
+           <div class="d1-dest">
+             <div class="d1-dest-n">${p.veiculos}</div>
+             <div class="d1-dest-d">${p.destino}</div>
+           </div>`).join('')}
+       </div>`
+    : '';
+
+  wrap.innerHTML = resumo +
+    `<div class="d1-section-title">Volume por turno</div>
+     <div class="d1-turnos">${barras}</div>` +
+    destinosHtml;
 }
 
 // ── INÍCIO ────────────────────────────────────────────────
