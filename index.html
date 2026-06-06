@@ -469,7 +469,7 @@ function reiniciarContagem() {
 // ── RENDERIZAÇÃO PRINCIPAL ────────────────────────────────
 function renderizar(d) {
   docasCache = d.statusDocas || d.docas || [];
-  renderMetricas(docasCache);
+  renderMetricas(docasCache, d.statusDocasD1 || []);
   renderFiltros(docasCache);
   renderDocas(docasCache);
   renderTurnos(d.volumePorTurno || {});
@@ -481,12 +481,17 @@ function renderizar(d) {
 }
 
 // ── MÉTRICAS ──────────────────────────────────────────────
-function renderMetricas(docas) {
+function renderMetricas(docas, docasD1) {
   const c = { completa:0, aguardando:0, livre:0, bloqueada:0 };
   docas.forEach(d => { if (c[d.status] !== undefined) c[d.status]++; });
-  document.getElementById('m-c').textContent = c.completa;
-  document.getElementById('m-a').textContent = c.aguardando;
-  document.getElementById('m-l').textContent = c.livre;
+
+  // Soma D+1 apenas para Completas, Ag. Piso e Livres
+  const d1 = { completa:0, aguardando:0, livre:0 };
+  (docasD1 || []).forEach(d => { if (d1[d.status] !== undefined) d1[d.status]++; });
+
+  document.getElementById('m-c').textContent = c.completa + d1.completa;
+  document.getElementById('m-a').textContent = c.aguardando + d1.aguardando;
+  document.getElementById('m-l').textContent = c.livre + d1.livre;
   document.getElementById('m-b').textContent = c.bloqueada;
 }
 
