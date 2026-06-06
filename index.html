@@ -83,7 +83,7 @@ body {
 /* ── MÉTRICAS ────────────────────────────── */
 .metricas {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -251,6 +251,7 @@ tr:last-child td { border-bottom: none; }
 /* ── RESPONSIVO ──────────────────────────── */
 @media (max-width: 960px) {
   .metricas        { grid-template-columns: repeat(2,1fr); }
+  .metricas .met   { min-width: 0; }
   .row-3, .row-2   { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
@@ -306,6 +307,21 @@ tr:last-child td { border-bottom: none; }
       <div class="met-label">Bloqueadas</div>
       <div class="met-val" id="m-b">—</div>
       <div class="met-sub">Fora de uso</div>
+    </div>
+    <div class="met" style="border-left: 3px solid var(--purple-bd);">
+      <div class="met-label">Carregando</div>
+      <div class="met-val" id="m-car" style="color:var(--purple);">—</div>
+      <div class="met-sub">Em processo</div>
+    </div>
+    <div class="met" style="border-left: 3px solid var(--green-bd);">
+      <div class="met-label">C/ Carreta</div>
+      <div class="met-val" id="m-cc" style="color:var(--green);">—</div>
+      <div class="met-sub">Docas abastecidas</div>
+    </div>
+    <div class="met" style="border-left: 3px solid var(--amber-bd);">
+      <div class="met-label">S/ Carreta</div>
+      <div class="met-val" id="m-sc" style="color:var(--amber);">—</div>
+      <div class="met-sub">Aguardando carreta</div>
     </div>
   </div>
 
@@ -461,6 +477,7 @@ function renderizar(d) {
   renderPerdas(d.perdas || []);
   renderPlano(d.planoVeiculos || []);
   renderD1(d.d1 || null);
+  renderCarretas(d.carregando || 0, d.carretas || {});
 }
 
 // ── MÉTRICAS ──────────────────────────────────────────────
@@ -685,6 +702,16 @@ function renderD1(d1) {
     `<div class="d1-section-title">Volume por turno</div>
      <div class="d1-turnos">${barras}</div>` +
     destinosHtml;
+}
+
+// ── CARRETAS ─────────────────────────────────────────────
+function renderCarretas(carregando, carretas) {
+  const mCar = document.getElementById('m-car');
+  const mCc  = document.getElementById('m-cc');
+  const mSc  = document.getElementById('m-sc');
+  if (mCar) mCar.textContent = carregando;
+  if (mCc)  mCc.textContent  = carretas.comCarreta  !== undefined ? carretas.comCarreta  : '—';
+  if (mSc)  mSc.textContent  = carretas.semCarreta !== undefined ? carretas.semCarreta : '—';
 }
 
 // ── INÍCIO ────────────────────────────────────────────────
