@@ -203,6 +203,24 @@ tr:last-child td { border-bottom: none; }
 .badge.laranja { background: var(--amber-bg); color: var(--amber); }
 .badge.cinza  { background: var(--gray-bg);  color: var(--gray);  }
 
+/* ── PRÓXIMOS CPTS ──────────────────────────── */
+.cpt-list { display: flex; flex-direction: column; gap: 6px; }
+.cpt-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg); border-radius: var(--r); padding: 8px 10px;
+}
+.cpt-hora {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  min-width: 42px; letter-spacing: -.02em;
+}
+.cpt-dest { font-size: 12px; font-weight: 600; color: var(--text); flex: 1; }
+.cpt-turno {
+  font-size: 10px; font-weight: 600; padding: 2px 7px;
+  border-radius: 20px; background: var(--blue-bg); color: var(--blue);
+}
+.cpt-turno.t2 { background: var(--green-bg); color: var(--green); }
+.cpt-turno.t3 { background: var(--amber-bg); color: var(--amber); }
+
 /* ── ESTADO VAZIO ────────────────────────── */
 .vazio { text-align: center; padding: 28px 12px; color: var(--muted); font-size: 12px; }
 
@@ -370,6 +388,12 @@ tr:last-child td { border-bottom: none; }
         <div id="d1-wrap" style="font-size:12px; color:var(--muted);">Carregando...</div>
       </div>
 
+      <!-- Próximos CPTs -->
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">⏱ Próximos CPTs</span></div>
+        <div id="cpts-wrap"><div class="vazio">Carregando...</div></div>
+      </div>
+
       <!-- Plano veículos -->
       <div class="card">
         <div class="card-hdr"><span class="card-title">Plano de veículos — D0</span></div>
@@ -469,7 +493,7 @@ function reiniciarContagem() {
 // ── RENDERIZAÇÃO PRINCIPAL ────────────────────────────────
 function renderizar(d) {
   docasCache = d.statusDocas || d.docas || [];
-  renderMetricas(docasCache, []);
+  renderMetricas(docasCache, d.d1 && d.d1.statusDocas ? d.d1.statusDocas : []);
   renderFiltros(docasCache);
   renderDocas(docasCache);
   renderTurnos(d.volumePorTurno || {});
@@ -478,6 +502,7 @@ function renderizar(d) {
   renderPlano(d.planoVeiculos || []);
   renderD1(d.d1 || null);
   renderCarretas(d.carregando || 0, d.carretas || {});
+  renderProximosCPTs(d.proximosCPTs || []);
 }
 
 // ── MÉTRICAS ──────────────────────────────────────────────
@@ -707,6 +732,25 @@ function renderD1(d1) {
     `<div class="d1-section-title">Volume por turno</div>
      <div class="d1-turnos">${barras}</div>` +
     destinosHtml;
+}
+
+// ── PRÓXIMOS CPTS ────────────────────────────────────────
+function renderProximosCPTs(cpts) {
+  const wrap = document.getElementById('cpts-wrap');
+  if (!wrap) return;
+  if (!cpts.length) {
+    wrap.innerHTML = '<div class="vazio">Sem CPTs pendentes.</div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="cpt-list">' + cpts.map(c => {
+    const t = (c.turno || '').replace(/\s/g,'').toUpperCase();
+    const cls = t.includes('T2') ? 't2' : t.includes('T3') ? 't3' : 't1';
+    return `<div class="cpt-item">
+      <span class="cpt-hora">${c.cpt}</span>
+      <span class="cpt-dest">${c.destino || '—'}</span>
+      <span class="cpt-turno ${cls}">${c.turno || '—'}</span>
+    </div>`;
+  }).join('') + '</div>';
 }
 
 // ── CARRETAS ─────────────────────────────────────────────
