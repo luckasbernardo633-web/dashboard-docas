@@ -294,9 +294,9 @@ tr:last-child td { border-bottom: none; }
       <div class="met-sub">100% carregadas</div>
     </div>
     <div class="met laranja">
-      <div class="met-label">Ag. piso</div>
+      <div class="met-label">Ag. Completar</div>
       <div class="met-val" id="m-a">—</div>
-      <div class="met-sub">Falta de piso</div>
+      <div class="met-sub">Aguardando completar</div>
     </div>
     <div class="met azul">
       <div class="met-label">Livres</div>
@@ -334,7 +334,7 @@ tr:last-child td { border-bottom: none; }
       </div>
       <div class="leg">
         <div class="leg-i"><div class="leg-d" style="background:var(--green-bd)"></div>Completa</div>
-        <div class="leg-i"><div class="leg-d" style="background:var(--amber-bd)"></div>Ag. piso</div>
+        <div class="leg-i"><div class="leg-d" style="background:var(--amber-bd)"></div>Ag. Completar</div>
         <div class="leg-i"><div class="leg-d" style="background:var(--purple-bd)"></div>Carregando</div>
         <div class="leg-i"><div class="leg-d" style="background:var(--blue-bd)"></div>Livre</div>
         <div class="leg-i"><div class="leg-d" style="background:var(--red-bd)"></div>Bloqueada</div>
@@ -469,7 +469,7 @@ function reiniciarContagem() {
 // ── RENDERIZAÇÃO PRINCIPAL ────────────────────────────────
 function renderizar(d) {
   docasCache = d.statusDocas || d.docas || [];
-  renderMetricas(docasCache, d.statusDocasD1 || []);
+  renderMetricas(docasCache, []);
   renderFiltros(docasCache);
   renderDocas(docasCache);
   renderTurnos(d.volumePorTurno || {});
@@ -497,7 +497,7 @@ function renderMetricas(docas, docasD1) {
 
 // ── FILTROS ───────────────────────────────────────────────
 const STATUS_LABEL = {
-  todos:'Todas', completa:'Completa', aguardando:'Ag. piso',
+  todos:'Todas', completa:'Completa', aguardando:'Ag. Completar',
   carregando:'Carregando', livre:'Livre', bloqueada:'Bloqueada', insumo:'Insumo'
 };
 
