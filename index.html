@@ -554,7 +554,7 @@ function renderDocas(docas) {
   }
 
   grid.innerHTML = lista.map(d => `
-    <div class="dc ${d.status}" title="Doca ${d.doca} — ${d.carreta || 'S/ carreta'} | CPT: ${d.cpt || '—'}">
+    <div class="dc ${d.status}" title="Doca ${d.doca} | ${d.carreta || '—'} | ${d.transp || '—'}">
       <div class="dc-num">Doca ${d.doca}</div>
       <div class="dc-dest">${d.sigla || '—'}</div>
       <div class="dc-st">${STATUS_LABEL[d.status] || d.status}</div>
