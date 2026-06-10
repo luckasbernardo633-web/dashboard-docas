@@ -610,9 +610,13 @@ function renderGrafico(hist) {
         {
           label: 'Planejado',
           data: planejado,
-          backgroundColor: planejado.map((_,i) => isHoje(_,i) ? '#EF9F27' : '#C7DFF7'),
+          backgroundColor: planejado.map((_,i) => isHoje(_,i) ? 'rgba(239,159,39,0.4)' : 'rgba(199,223,247,0.9)'),
+          borderColor:     planejado.map((_,i) => isHoje(_,i) ? '#EF9F27' : '#85B7EB'),
+          borderWidth: 1,
           borderRadius: 4,
           borderSkipped: false,
+          barPercentage: 0.8,
+          categoryPercentage: 0.85,
         },
         {
           label: 'Realizado',
@@ -620,6 +624,8 @@ function renderGrafico(hist) {
           backgroundColor: realizado.map((_,i) => isHoje(_,i) ? '#B87200' : '#185FA5'),
           borderRadius: 4,
           borderSkipped: false,
+          barPercentage: 0.8,
+          categoryPercentage: 0.85,
         }
       ]
     },
@@ -629,7 +635,7 @@ function renderGrafico(hist) {
         legend: {
           display: true,
           position: 'top',
-          labels: { font: { size: 10 }, color: '#6B6A66', boxWidth: 10, padding: 12 }
+          labels: { font:{ size:10 }, color:'#6B6A66', boxWidth:10, padding:12 }
         },
         tooltip: {
           callbacks: {
@@ -638,18 +644,9 @@ function renderGrafico(hist) {
         }
       },
       scales: {
-        x: {
-          ticks:{ font:{size:10}, color:'#888780' },
-          grid:{ display:false }
-        },
-        y: {
-          ticks:{ font:{size:10}, color:'#888780' },
-          grid:{ color:'rgba(0,0,0,0.04)' },
-          min:0
-        }
-      },
-      barPercentage: 0.8,
-      categoryPercentage: 0.9
+        x: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ display:false } },
+        y: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ color:'rgba(0,0,0,0.04)' }, min:0 }
+      }
     }
   });
 }
