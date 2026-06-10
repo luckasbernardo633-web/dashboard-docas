@@ -407,9 +407,7 @@ tr:last-child td { border-bottom: none; }
   <div class="row row-2">
     <div class="card">
       <div class="card-hdr"><span class="card-title">Histórico — últimos 7 dias</span></div>
-      <div style="position:relative; height:220px;">
-        <canvas id="chart" role="img" aria-label="Volume de carregamentos últimos 7 dias">Histórico de volume por dia</canvas>
-      </div>
+      <div id="chart-custom" style="height:220px; overflow-x:auto;"></div>
     </div>
     <div class="card">
       <div class="card-hdr"><span class="card-title">Perdas de CPT — últimos 7 dias</span></div>
@@ -424,7 +422,7 @@ tr:last-child td { border-bottom: none; }
 //  ▼▼▼  ÚNICA COISA QUE VOCÊ PRECISA ALTERAR  ▼▼▼
 //  Cole aqui a URL gerada no Deploy do Apps Script
 // ════════════════════════════════════════════════════════════
-const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbw7KUEcjCSWLD1wRlZJxwNogt_QZ0yWOpCmqht87Nh3T4SbHWCkKrUTN3lXa2p6y5y-/exec';
+const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbyXMvpjokg-v6bzYsWzaAFcFOPZrWzLlbStfn17UFGXP3YNF5uF_Ey15UCflZp_scg6/exec';
 
 //  Intervalo de atualização automática (em segundos)
 const INTERVALO_SEG = 300; // 5 minutos — mude à vontade
@@ -594,70 +592,43 @@ function renderTurnos(vol) {
 
 // ── GRÁFICO ───────────────────────────────────────────────
 function renderGrafico(hist) {
-  if (grafico) { grafico.destroy(); grafico = null; }
-  const labels    = hist.map(h => h.data);
-  const planejado = hist.map(h => h.planejado || h.total || 0);
-  const realizado = hist.map(h => h.realizado || 0);
-  const last      = hist.length - 1;
+  if (grafico) { grafico = null; }
+  const wrap = document.getElementById('chart-custom');
+  if (!wrap || !hist.length) return;
 
-  const ctx = document.getElementById('chart');
-  if (!ctx) return;
+  const maxVal = Math.max(...hist.map(h => Math.max(h.planejado||0, h.total||0)), 1);
 
-  Chart.register(ChartDataLabels);
+  const bars = hist.map((h, i) => {
+    const plan = h.planejado || h.total || 0;
+    const real = h.realizado || 0;
+    const isLast = i === hist.length - 1;
+    const pH = Math.round((plan / maxVal) * 160);
+    const rH = Math.round((real / maxVal) * 160);
+    const pColor = isLast ? '#EF9F27' : '#97C459';
+    const rColor = isLast ? '#B87200' : '#185FA5';
+    const label  = h.data.substring(0,5);
 
-  grafico = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Planejado',
-          data: planejado,
-          backgroundColor: planejado.map((_,i) => i === last ? '#EF9F27' : '#97C459'),
-          borderRadius: 4,
-          borderSkipped: false,
-          barPercentage: 0.4,
-          categoryPercentage: 0.9,
-        },
-        {
-          label: 'Realizado',
-          data: realizado,
-          backgroundColor: realizado.map((_,i) => i === last ? '#B87200' : '#185FA5'),
-          borderRadius: 4,
-          borderSkipped: false,
-          barPercentage: 0.4,
-          categoryPercentage: 0.9,
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true, position: 'top',
-          labels: { font:{ size:10 }, color:'#6B6A66', boxWidth:10, padding:12 }
-        },
-        tooltip: { enabled: true },
-        datalabels: {
-          anchor: 'end',
-          align: 'end',
-          color: '#444',
-          font: { size: 9, weight: '600' },
-          formatter: v => v > 0 ? v : '',
-          offset: -2,
-        }
-      },
-      scales: {
-        x: { ticks:{ font:{size:9}, color:'#888780' }, grid:{ display:false } },
-        y: {
-          ticks:{ font:{size:10}, color:'#888780' },
-          grid:{ color:'rgba(0,0,0,0.04)' },
-          min: 0,
-          suggestedMax: Math.max(...planejado) + 15,
-        }
-      }
-    }
-  });
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:38px;">
+      <div style="display:flex;align-items:flex-end;gap:2px;height:175px;">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;">
+          <span style="font-size:8px;font-weight:700;color:${pColor};margin-bottom:2px;">${plan}</span>
+          <div style="width:14px;height:${pH}px;background:${pColor};border-radius:3px 3px 0 0;opacity:0.85;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;">
+          <span style="font-size:8px;font-weight:700;color:${rColor};margin-bottom:2px;">${real}</span>
+          <div style="width:14px;height:${rH}px;background:${rColor};border-radius:3px 3px 0 0;"></div>
+        </div>
+      </div>
+      <span style="font-size:8px;color:#888780;white-space:nowrap;transform:rotate(-35deg);transform-origin:top left;margin-top:8px;margin-left:8px;">${label}</span>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;font-size:10px;color:#6B6A66;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#97C459;border-radius:2px;display:inline-block;"></span>Planejado</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#185FA5;border-radius:2px;display:inline-block;"></span>Realizado</span>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:4px;overflow-x:auto;padding-bottom:30px;">${bars}</div>`;
 }
 
 // ── PERDAS ────────────────────────────────────────────────
