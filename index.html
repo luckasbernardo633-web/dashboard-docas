@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Operacional — Docas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <style>
 /* ════════════════════════════════════════════
    CONFIGURAÇÃO RÁPIDA
@@ -597,10 +598,12 @@ function renderGrafico(hist) {
   const labels    = hist.map(h => h.data);
   const planejado = hist.map(h => h.planejado || h.total || 0);
   const realizado = hist.map(h => h.realizado || 0);
-  const isHoje    = (_,i) => i === hist.length - 1;
+  const last      = hist.length - 1;
 
   const ctx = document.getElementById('chart');
   if (!ctx) return;
+
+  Chart.register(ChartDataLabels);
 
   grafico = new Chart(ctx, {
     type: 'bar',
@@ -610,22 +613,20 @@ function renderGrafico(hist) {
         {
           label: 'Planejado',
           data: planejado,
-          backgroundColor: planejado.map((_,i) => isHoje(_,i) ? 'rgba(239,159,39,0.4)' : 'rgba(199,223,247,0.9)'),
-          borderColor:     planejado.map((_,i) => isHoje(_,i) ? '#EF9F27' : '#85B7EB'),
-          borderWidth: 1,
+          backgroundColor: planejado.map((_,i) => i === last ? '#EF9F27' : '#97C459'),
           borderRadius: 4,
           borderSkipped: false,
-          barPercentage: 0.8,
-          categoryPercentage: 0.85,
+          barPercentage: 0.4,
+          categoryPercentage: 0.9,
         },
         {
           label: 'Realizado',
           data: realizado,
-          backgroundColor: realizado.map((_,i) => isHoje(_,i) ? '#B87200' : '#185FA5'),
+          backgroundColor: realizado.map((_,i) => i === last ? '#B87200' : '#185FA5'),
           borderRadius: 4,
           borderSkipped: false,
-          barPercentage: 0.8,
-          categoryPercentage: 0.85,
+          barPercentage: 0.4,
+          categoryPercentage: 0.9,
         }
       ]
     },
@@ -633,19 +634,27 @@ function renderGrafico(hist) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: true,
-          position: 'top',
+          display: true, position: 'top',
           labels: { font:{ size:10 }, color:'#6B6A66', boxWidth:10, padding:12 }
         },
-        tooltip: {
-          callbacks: {
-            label: c => c.dataset.label + ': ' + c.raw + (c.dataIndex === hist.length-1 ? ' (parcial)' : '')
-          }
+        tooltip: { enabled: true },
+        datalabels: {
+          anchor: 'end',
+          align: 'end',
+          color: '#444',
+          font: { size: 9, weight: '600' },
+          formatter: v => v > 0 ? v : '',
+          offset: -2,
         }
       },
       scales: {
-        x: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ display:false } },
-        y: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ color:'rgba(0,0,0,0.04)' }, min:0 }
+        x: { ticks:{ font:{size:9}, color:'#888780' }, grid:{ display:false } },
+        y: {
+          ticks:{ font:{size:10}, color:'#888780' },
+          grid:{ color:'rgba(0,0,0,0.04)' },
+          min: 0,
+          suggestedMax: Math.max(...planejado) + 15,
+        }
       }
     }
   });
