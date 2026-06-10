@@ -594,9 +594,10 @@ function renderTurnos(vol) {
 // ── GRÁFICO ───────────────────────────────────────────────
 function renderGrafico(hist) {
   if (grafico) { grafico.destroy(); grafico = null; }
-  const labels = hist.map(h => h.data);
-  const values = hist.map(h => h.total);
-  const cores  = values.map((_,i) => i === values.length - 1 ? '#EF9F27' : '#378ADD');
+  const labels    = hist.map(h => h.data);
+  const planejado = hist.map(h => h.planejado || h.total || 0);
+  const realizado = hist.map(h => h.realizado || 0);
+  const isHoje    = (_,i) => i === hist.length - 1;
 
   const ctx = document.getElementById('chart');
   if (!ctx) return;
@@ -605,13 +606,38 @@ function renderGrafico(hist) {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ data: values, backgroundColor: cores, borderRadius: 4, borderSkipped: false }]
+      datasets: [
+        {
+          label: 'Planejado',
+          data: planejado,
+          backgroundColor: planejado.map((_,i) => isHoje(_,i) ? '#EF9F27' : '#C7DFF7'),
+          borderRadius: 4,
+          borderSkipped: false,
+          order: 2,
+        },
+        {
+          label: 'Realizado',
+          data: realizado,
+          backgroundColor: realizado.map((_,i) => isHoje(_,i) ? '#B87200' : '#185FA5'),
+          borderRadius: 4,
+          borderSkipped: false,
+          order: 1,
+        }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: c => c.raw + (c.dataIndex === values.length-1 ? ' (parcial)' : '') } }
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { font: { size: 10 }, color: '#6B6A66', boxWidth: 10, padding: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: c => c.dataset.label + ': ' + c.raw + (c.dataIndex === hist.length-1 ? ' (parcial)' : '')
+          }
+        }
       },
       scales: {
         x: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ display:false } },
