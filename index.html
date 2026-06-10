@@ -406,7 +406,7 @@ tr:last-child td { border-bottom: none; }
   <div class="row row-2">
     <div class="card">
       <div class="card-hdr"><span class="card-title">Histórico — últimos 7 dias</span></div>
-      <div style="position:relative; height:190px;">
+      <div style="position:relative; height:220px;">
         <canvas id="chart" role="img" aria-label="Volume de carregamentos últimos 7 dias">Histórico de volume por dia</canvas>
       </div>
     </div>
@@ -613,7 +613,6 @@ function renderGrafico(hist) {
           backgroundColor: planejado.map((_,i) => isHoje(_,i) ? '#EF9F27' : '#C7DFF7'),
           borderRadius: 4,
           borderSkipped: false,
-          order: 2,
         },
         {
           label: 'Realizado',
@@ -621,7 +620,6 @@ function renderGrafico(hist) {
           backgroundColor: realizado.map((_,i) => isHoje(_,i) ? '#B87200' : '#185FA5'),
           borderRadius: 4,
           borderSkipped: false,
-          order: 1,
         }
       ]
     },
@@ -640,9 +638,18 @@ function renderGrafico(hist) {
         }
       },
       scales: {
-        x: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ display:false } },
-        y: { ticks:{ font:{size:10}, color:'#888780' }, grid:{ color:'rgba(0,0,0,0.04)' }, min:0 }
-      }
+        x: {
+          ticks:{ font:{size:10}, color:'#888780' },
+          grid:{ display:false }
+        },
+        y: {
+          ticks:{ font:{size:10}, color:'#888780' },
+          grid:{ color:'rgba(0,0,0,0.04)' },
+          min:0
+        }
+      },
+      barPercentage: 0.8,
+      categoryPercentage: 0.9
     }
   });
 }
