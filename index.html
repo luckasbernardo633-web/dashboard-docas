@@ -310,7 +310,7 @@ tr:last-child td { border-bottom: none; }
     <div class="met verde">
       <div class="met-label">Completas</div>
       <div class="met-val" id="m-c">—</div>
-      <div class="met-sub">100% carregadas</div>
+      <div class="met-sub" id="m-c-sub">100% carregadas</div>
     </div>
     <div class="met laranja">
       <div class="met-label">Ag. Completar</div>
@@ -514,6 +514,8 @@ function renderMetricas(docas, docasD1) {
   (docasD1 || []).forEach(d => { if (d1[d.status] !== undefined) d1[d.status]++; });
 
   document.getElementById('m-c').textContent = c.completa + d1.completa;
+  const subC = document.getElementById('m-c-sub');
+  if (subC) subC.textContent = 'D0: ' + c.completa + ' | D+1: ' + d1.completa;
   document.getElementById('m-a').textContent = c.aguardando + d1.aguardando;
   document.getElementById('m-l').textContent = c.livre + d1.livre;
   document.getElementById('m-b').textContent = c.bloqueada;
